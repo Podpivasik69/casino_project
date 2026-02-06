@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+
+{% block title %}SKET CASINO | Главная{% endblock %}
+
+{% block content %}
+<style>
+    .hero-section {
+        background: rgba(26, 26, 36, 0.8);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius-xl);
+        padding: 80px 60px;
+        margin-bottom: 60px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--gradient);
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 72px;
+        font-weight: 900;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 20px;
+    }
+
+    .hero-subtitle {
+        font-size: 20px;
+        color: var(--gray-light);
+        margin-bottom: 40px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+    }
+
+    .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px;
+        margin-top: 60px;
+    }
+
+    .stat-card {
+        background: rgba(26, 26, 36, 0.8);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius-lg);
+        padding: 30px 20px;
+        text-align: center;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+        background: rgba(16, 185, 129, 0.05);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient);
+    }
+
+    .stat-card i {
+        font-size: 40px;
+        margin-bottom: 15px;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--light);
+        margin: 10px 0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .stat-label {
+        color: var(--gray-light);
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .featured-games {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        margin: 60px 0;
+    }
+
+    .game-card {
+        background: rgba(26, 26, 36, 0.8);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius-xl);
+        padding: 30px;
+        transition: var(--transition);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .game-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--primary);
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);
+    }
+
+    .game-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--gradient);
+    }
+
+    .game-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--gradient);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .game-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--light);
+        margin-bottom: 15px;
+    }
+
+    .game-desc {
+        color: var(--gray-light);
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .game-stats {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 20px;
+        border-top: 1px solid var(--gray-dark);
+    }
+
+    .stat-badge {
+        background: rgba(16, 185, 129, 0.1);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 600;
+    }
+
+    .promo-banner {
+        background: rgba(26, 26, 36, 0.8);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius-xl);
+        padding: 60px 40px;
+        margin: 60px 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .promo-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--gradient);
+    }
+
+    .gradient-text {
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    @media (max-width: 992px) {
+        .hero-section {
+            padding: 60px 30px;
+        }
+        .hero-title {
+            font-size: 48px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 36px;
+        }
+        .hero-stats {
+            grid-template-columns: 1fr;
+        }
+        .featured-games {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">SKET CASINO</h1>
+        <p class="hero-subtitle">Эксклюзивное премиум казино с инновационным дизайном. Максимальные выплаты до 250x. Provably Fair игры и мгновенные выводы.</p>
+
+        <div style="margin-top: 40px;">
+            {% if user.is_authenticated %}
+                <a href="/mines/" class="btn btn-primary btn-lg">
+                    <i class="fas fa-play"></i> НАЧАТЬ ИГРУ
+                </a>
+            {% else %}
+                <a href="/register/" class="btn btn-primary btn-lg">
+                    <i class="fas fa-user-plus"></i> РЕГИСТРАЦИЯ
+                </a>
+                <a href="/login/" class="btn btn-secondary btn-lg" style="margin-left: 15px;">
+                    <i class="fas fa-sign-in-alt"></i> ВХОД
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="hero-stats">
+            <div class="stat-card">
+                <i class="fas fa-shield-alt"></i>
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Provably Fair</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-bolt"></i>
+                <div class="stat-value">25x</div>
+                <div class="stat-label">Макс. множитель</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-gem"></i>
+                <div class="stat-value">1000₽</div>
+                <div class="stat-label">Стартовый баланс</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-gamepad"></i>
+                <div class="stat-value">2</div>
+                <div class="stat-label">Доступные игры</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2 style="text-align: center; margin-bottom: 40px; font-family: 'Orbitron', sans-serif; font-size: 48px; font-weight: 800; color: var(--light);">
+    ПОПУЛЯРНЫЕ ИГРЫ
+</h2>
+
+<div class="featured-games">
+    <div class="game-card" onclick="window.location.href='/mines/'">
+        <div class="game-icon">💣</div>
+        <h3 class="game-title">Mines</h3>
+        <p class="game-desc">Найдите все алмазы, избегая мин. Стратегическая игра с растущим множителем до 250x. Provably Fair алгоритм гарантирует честность.</p>
+        <div class="game-stats">
+            <div class="stat-badge"><i class="fas fa-chart-line"></i> 250x</div>
+            <div class="stat-badge"><i class="fas fa-fire"></i> Hot</div>
+            <div class="stat-badge"><i class="fas fa-shield-alt"></i> Fair</div>
+        </div>
+    </div>
+    
+    <div class="game-card" onclick="window.location.href='/plinko/'">
+        <div class="game-icon">🎯</div>
+        <h3 class="game-title">Plinko</h3>
+        <p class="game-desc">Бросьте шарик и наблюдайте, как он падает через колышки. Выберите уровень риска и получите множитель до 25x!</p>
+        <div class="game-stats">
+            <div class="stat-badge"><i class="fas fa-chart-line"></i> 25x</div>
+            <div class="stat-badge"><i class="fas fa-fire"></i> New</div>
+            <div class="stat-badge"><i class="fas fa-shield-alt"></i> Fair</div>
+        </div>
+    </div>
+</div>
+
+<div class="promo-banner">
+    <h2 style="font-family: 'Orbitron', sans-serif; font-size: 40px; margin-bottom: 20px; color: var(--light);">
+        <i class="fas fa-gift"></i> ДЕМО-РЕЖИМ
+    </h2>
+    <p style="font-size: 20px; color: var(--gray-light); margin-bottom: 30px; max-width: 700px; margin-left: auto; margin-right: auto;">
+        Начните с <span class="gradient-text" style="font-weight: 700;">1000 ₽</span> демо-баланса. Пополняйте баланс в любой момент кнопкой <span class="gradient-text" style="font-weight: 700;">+500 ₽</span>. Играйте без риска!
+    </p>
+    {% if not user.is_authenticated %}
+    <a href="/register/" class="btn btn-primary btn-lg">
+        <i class="fas fa-gem"></i> НАЧАТЬ ИГРАТЬ
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
