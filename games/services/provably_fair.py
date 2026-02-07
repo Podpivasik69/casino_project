@@ -339,3 +339,49 @@ class ProvablyFairService:
             'is_valid': is_valid,
             'verification_url': f'/verify?server_seed={server_seed}&client_seed={client_seed}&nonce={nonce}'
         }
+    
+    @staticmethod
+    def generate_dice_roll(
+        server_seed: str,
+        client_seed: str,
+        nonce: int
+    ) -> int:
+        """
+        Generate dice roll (1-6) using provably fair algorithm.
+        
+        Algorithm:
+        1. Create HMAC-SHA256 hash using server_seed as key
+        2. Message is client_seed + str(nonce)
+        3. Use first 4 bytes of hash to generate number
+        4. Map to range [1, 6]
+        
+        Args:
+            server_seed: Secret server seed (hex string)
+            client_seed: Public client seed (hex string)
+            nonce: Game round number
+            
+        Returns:
+            Dice roll result (1-6)
+            
+        Example:
+            >>> roll = ProvablyFairService.generate_dice_roll(
+            ...     "abc123", "def456", 0
+            ... )
+            >>> 1 <= roll <= 6
+            True
+        """
+        # Create message for HMAC
+        message = f"{client_seed}{nonce}".encode()
+        
+        # Generate HMAC-SHA256
+        hmac_hash = hmac.new(
+            server_seed.encode(),
+            message,
+            hashlib.sha256
+        ).digest()
+        
+        # Use first 4 bytes to get random number
+        rand_val = int.from_bytes(hmac_hash[:4], byteorder='big')
+        
+        # Map to range [1, 6]
+        return (rand_val % 6) + 1

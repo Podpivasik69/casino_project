@@ -218,3 +218,195 @@ class PlinkoGame(models.Model):
     def is_completed(self):
         """Check if game is completed (ball dropped)"""
         return self.final_multiplier is not None
+
+
+class DiceGame(models.Model):
+    """
+    Dice game instance.
+    
+    Game flow:
+    1. User creates game with bet_amount and selected_number (1-6)
+    2. Server generates provably fair random number (1-6)
+    3. If match: user wins 6x multiplier
+    4. If no match: user loses bet
+    """
+    
+    # User and bet
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='dice_games',
+        verbose_name='Пользователь'
+    )
+    bet_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+        verbose_name='Сумма ставки'
+    )
+    selected_number = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        verbose_name='Выбранное число'
+    )
+    
+    # Result
+    rolled_number = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        verbose_name='Выпавшее число'
+    )
+    multiplier = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        verbose_name='Множитель'
+    )
+    won = models.BooleanField(
+        default=False,
+        verbose_name='Выиграл'
+    )
+    
+    # Provably Fair fields
+    server_seed = models.CharField(
+        max_length=64,
+        verbose_name='Server seed',
+        help_text='Секретный seed сервера (64 hex chars)'
+    )
+    client_seed = models.CharField(
+        max_length=64,
+        verbose_name='Client seed',
+        help_text='Публичный seed клиента (64 hex chars)'
+    )
+    nonce = models.IntegerField(
+        default=0,
+        verbose_name='Nonce',
+        help_text='Номер раунда для данной пары seeds'
+    )
+    server_seed_hash = models.CharField(
+        max_length=64,
+        verbose_name='Server seed hash',
+        help_text='SHA256 хэш server_seed (показывается до игры)'
+    )
+    
+    # Timestamp
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создана'
+    )
+    
+    class Meta:
+        verbose_name = 'Игра Dice'
+        verbose_name_plural = 'Игры Dice'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at'], name='dice_user_created_idx'),
+        ]
+    
+    def __str__(self):
+        return f"Dice #{self.id} - {self.user.username} - {'Выиграл' if self.won else 'Проиграл'}"
+
+
+class SlotsGame(models.Model):
+    """
+    Slots game instance.
+    
+    Game flow:
+    1. User creates game with bet_amount and reels_count (3 or 5)
+    2. Server generates provably fair random symbols for reels
+    3. System checks for winning combinations
+    4. Winnings calculated and added to balance
+    """
+    
+    REELS_CHOICES = [
+        (3, '3 барабана'),
+        (5, '5 барабанов')
+    ]
+    
+    # User and bet
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='slots_games',
+        verbose_name='Пользователь'
+    )
+    bet_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+        verbose_name='Сумма ставки'
+    )
+    
+    # Game mode
+    reels_count = models.IntegerField(
+        choices=REELS_CHOICES,
+        default=5,
+        verbose_name='Количество барабанов'
+    )
+    
+    # Game result
+    reels = models.JSONField(
+        verbose_name='Барабаны',
+        help_text='Массив из 3 или 5 символов'
+    )
+    multiplier = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        verbose_name='Множитель'
+    )
+    win_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name='Сумма выигрыша'
+    )
+    winning_combination = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Выигрышная комбинация'
+    )
+    
+    # Provably Fair fields
+    server_seed = models.CharField(
+        max_length=64,
+        verbose_name='Server seed',
+        help_text='Секретный seed сервера (64 hex chars)'
+    )
+    client_seed = models.CharField(
+        max_length=64,
+        verbose_name='Client seed',
+        help_text='Публичный seed клиента (64 hex chars)'
+    )
+    nonce = models.IntegerField(
+        default=0,
+        verbose_name='Nonce',
+        help_text='Номер раунда для данной пары seeds'
+    )
+    server_seed_hash = models.CharField(
+        max_length=64,
+        verbose_name='Server seed hash',
+        help_text='SHA256 хэш server_seed (показывается до игры)'
+    )
+    
+    # Timestamp
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создана'
+    )
+    
+    class Meta:
+        verbose_name = 'Игра Slots'
+        verbose_name_plural = 'Игры Slots'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at'], name='slots_user_created_idx'),
+        ]
+    
+    def __str__(self):
+        return f"Slots #{self.id} - {self.user.username} - {self.reels_count} reels"
+    
+    def is_win(self):
+        """Check if game is a win"""
+        return self.multiplier > 0
+    
+    def get_win_amount(self):
+        """Get win amount"""
+        return self.win_amount

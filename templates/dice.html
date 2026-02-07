@@ -1,0 +1,798 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dice | SKET CASINO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/games/dice.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="game-room">
+    <div class="game-header">
+        <h2><i class="fas fa-dice"></i> Кости</h2>
+        <p>Выберите число от 1 до 6 и сделайте ставку. Если угадаете - выигрыш ×6!</p>
+        <div class="current-balance">
+            <i class="fas fa-wallet"></i>
+            <span>Баланс: <strong id="balance">{{ user.profile.balance|floatformat:"-2" }}</strong> ₽</span>
+        </div>
+    </div>
+
+    <!-- Dice Grid -->
+    <div class="dice-grid" id="diceGrid">
+        <div class="dice-number" data-number="1">1</div>
+        <div class="dice-number" data-number="2">2</div>
+        <div class="dice-number" data-number="3">3</div>
+        <div class="dice-number" data-number="4">4</div>
+        <div class="dice-number" data-number="5">5</div>
+        <div class="dice-number" data-number="6">6</div>
+        <div class="dice-highlight" id="diceHighlight"></div>
+    </div>
+
+    <!-- Bet Controls -->
+    <div class="bet-controls">
+        <div class="bet-input-group">
+            <label for="betAmount">Сумма ставки:</label>
+            <input type="number" id="betAmount" value="10" min="0.01" step="0.01">
+        </div>
+        <button class="bet-btn" onclick="setBet(1)">+1</button>
+        <button class="bet-btn" onclick="setBet(10)">+10</button>
+        <button class="bet-btn" onclick="setBet(100)">+100</button>
+        <button class="bet-btn" onclick="setBet(0)">Очистить</button>
+    </div>
+
+    <!-- Play Button -->
+    <div style="text-align: center; margin: 40px 0;">
+        <button class="btn btn-primary btn-lg" id="playBtn" onclick="playGame()" disabled>
+            <i class="fas fa-dice"></i> Бросить кости
+        </button>
+    </div>
+
+    <!-- Result Display -->
+    <div id="resultDisplay" style="display: none; text-align: center; margin: 40px 0;">
+        <div class="result-card">
+            <h3 id="resultTitle"></h3>
+            <div class="result-dice">
+                <div class="dice-result" id="rolledDice"></div>
+            </div>
+            <p id="resultText"></p>
+            <p id="winningsText"></p>
+        </div>
+    </div>
+
+    <!-- Game History -->
+    <div class="game-history">
+        <h3><i class="fas fa-history"></i> История игр</h3>
+        <div id="historyList"></div>
+    </div>
+</div>
+
+<style>
+    .dice-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        max-width: 400px;
+        margin: 40px auto;
+        position: relative;
+    }
+
+    .dice-number {
+        aspect-ratio: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid var(--gray-dark);
+        border-radius: var(--border-radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--light);
+        cursor: pointer;
+        transition: var(--transition);
+        font-family: 'Orbitron', sans-serif;
+        position: relative;
+        z-index: 1;
+        box-sizing: border-box;
+        transform: translateZ(0);
+    }
+
+    .dice-number:hover {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: var(--primary);
+        transform: scale(1.05);
+    }
+
+    .dice-number.selected {
+        border: 3px solid var(--primary);
+        background: rgba(16, 185, 129, 0.1);
+        transform: scale(1.05) translateZ(0);
+    }
+
+    .dice-number.selected.lose {
+        border-color: var(--danger) !important;
+        background: rgba(239, 68, 68, 0.1) !important;
+    }
+
+    .dice-number.rolled {
+        border: 3px solid #FFD700;
+        background: rgba(255, 215, 0, 0.15);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.2);
+        animation: rollPulse 1s ease-in-out;
+    }
+
+    .dice-number.rolled.win {
+        background: rgba(16, 185, 129, 0.25);
+        border-color: var(--success);
+        box-shadow: 0 0 40px rgba(16, 185, 129, 0.8), inset 0 0 30px rgba(16, 185, 129, 0.3);
+        animation: winPulse 0.6s ease-in-out;
+    }
+
+    .dice-number.rolled.lose {
+        opacity: 0.7;
+        border-color: var(--danger);
+        background: rgba(239, 68, 68, 0.1);
+        animation: losePulse 0.4s ease-in-out;
+    }
+
+    @keyframes rollPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+    }
+
+    @keyframes winPulse {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.2); }
+        50% { transform: scale(1.1); }
+        75% { transform: scale(1.2); }
+    }
+
+    @keyframes losePulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(0.95); }
+    }
+
+    .dice-highlight {
+        position: absolute;
+        width: calc(33.333% - 13.33px);
+        aspect-ratio: 1;
+        border: 4px solid var(--primary);
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(16, 185, 129, 0.3);
+        pointer-events: none;
+        opacity: 0;
+        z-index: 2;
+        left: 0;
+        top: 0;
+        transform: translate(0, 0) translateZ(0);
+        will-change: transform, opacity;
+        box-sizing: border-box;
+    }
+
+    .dice-highlight.active {
+        opacity: 1;
+    }
+
+    .dice-highlight.lose {
+        border-color: var(--danger);
+        box-shadow: 0 0 30px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+    }
+
+    .bet-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+        align-items: center;
+        margin: 40px 0;
+    }
+
+    .bet-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .bet-input-group label {
+        color: var(--gray-light);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .bet-input-group input {
+        padding: 12px 20px;
+        background: rgba(26, 26, 36, 0.8);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius);
+        color: var(--light);
+        font-size: 18px;
+        font-weight: 600;
+        width: 200px;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    .bet-input-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .bet-btn {
+        background: rgba(26, 26, 36, 0.8);
+        border: 1px solid var(--gray-dark);
+        padding: 12px 24px;
+        border-radius: var(--border-radius);
+        color: var(--light);
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .bet-btn:hover {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: var(--primary);
+    }
+
+    .result-card {
+        background: rgba(26, 26, 36, 0.9);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius-xl);
+        padding: 40px;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .result-card h3 {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+
+    .result-card.win h3 {
+        color: var(--success);
+    }
+
+    .result-card.lose h3 {
+        color: var(--danger);
+    }
+
+    .dice-result {
+        width: 120px;
+        height: 120px;
+        background: var(--gradient);
+        border-radius: var(--border-radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 72px;
+        font-weight: 700;
+        color: var(--light);
+        margin: 20px auto;
+        box-shadow: var(--shadow-glow);
+        font-family: 'Orbitron', sans-serif;
+        animation: diceRoll 0.5s ease;
+    }
+
+    @keyframes diceRoll {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(90deg); }
+        50% { transform: rotate(180deg); }
+        75% { transform: rotate(270deg); }
+    }
+
+    .result-card p {
+        font-size: 18px;
+        color: var(--gray-light);
+        margin: 10px 0;
+    }
+
+    #winningsText {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-top: 20px;
+    }
+
+    .game-history {
+        margin-top: 60px;
+        background: rgba(26, 26, 36, 0.8);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius-xl);
+        padding: 30px;
+    }
+
+    .game-history h3 {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: var(--light);
+    }
+
+    .history-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--gray-dark);
+        border-radius: var(--border-radius);
+        padding: 15px 20px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: var(--transition);
+    }
+
+    .history-item:hover {
+        background: rgba(16, 185, 129, 0.05);
+        border-color: var(--primary);
+    }
+
+    .history-item.win {
+        border-left: 4px solid var(--success);
+    }
+
+    .history-item.lose {
+        border-left: 4px solid var(--danger);
+    }
+
+    .history-info {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .history-numbers {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .history-result {
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    .history-result.win {
+        color: var(--success);
+    }
+
+    .history-result.lose {
+        color: var(--danger);
+    }
+</style>
+
+<script>
+    let selectedNumber = null;
+    let isPlaying = false;
+
+    // Get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        loadHistory();
+        
+        // Add click handlers to dice numbers
+        document.querySelectorAll('.dice-number').forEach(dice => {
+            dice.addEventListener('click', function() {
+                selectNumber(parseInt(this.dataset.number));
+            });
+        });
+    });
+
+    function selectNumber(number) {
+        if (isPlaying) return;
+        
+        selectedNumber = number;
+        
+        // Update UI
+        document.querySelectorAll('.dice-number').forEach(dice => {
+            dice.classList.remove('selected');
+        });
+        document.querySelector(`[data-number="${number}"]`).classList.add('selected');
+        
+        // Enable play button
+        document.getElementById('playBtn').disabled = false;
+    }
+
+    function setBet(amount) {
+        const betInput = document.getElementById('betAmount');
+        if (amount === 0) {
+            betInput.value = '0';
+        } else {
+            betInput.value = parseFloat(betInput.value || 0) + amount;
+        }
+    }
+
+    async function playGame() {
+        if (isPlaying || selectedNumber === null) return;
+        
+        const betAmount = parseFloat(document.getElementById('betAmount').value);
+        
+        if (betAmount < 0.01) {
+            showNotification('Минимальная ставка: 0.01 ₽', 'error');
+            return;
+        }
+        
+        isPlaying = true;
+        document.getElementById('playBtn').disabled = true;
+        document.getElementById('resultDisplay').style.display = 'none';
+        
+        // Remove previous result classes
+        document.querySelectorAll('.dice-number').forEach(dice => {
+            dice.classList.remove('rolled', 'win', 'lose');
+        });
+        
+        try {
+            // Start animation and make API call simultaneously
+            const animationPromise = animateDiceRoll();
+            
+            // Get CSRF token
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                             getCookie('csrftoken');
+            
+            const response = await fetch('/api/games/dice/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    bet_amount: betAmount.toFixed(2),
+                    selected_number: selectedNumber
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Wait for animation to reach the result
+                await animateToResult(data.data.rolled_number);
+                
+                // Add rolled class to the rolled number
+                const highlight = document.getElementById('diceHighlight');
+                const rolledDice = document.querySelector(`[data-number="${data.data.rolled_number}"]`);
+                if (rolledDice) {
+                    rolledDice.classList.add('rolled');
+                    if (data.data.won) {
+                        rolledDice.classList.add('win');
+                    } else {
+                        rolledDice.classList.add('lose');
+                        // Change highlight color to red for loss
+                        highlight.classList.add('lose');
+                    }
+                }
+                
+                // Wait a bit to show the result
+                await new Promise(resolve => setTimeout(resolve, 600));
+                
+                // Hide highlight
+                highlight.classList.remove('active');
+                
+                // Update balance
+                document.getElementById('balance').textContent = formatCurrency(data.data.balance);
+                
+                // Show result
+                showResult(data.data);
+                
+                // Reload history
+                loadHistory();
+                
+                // Show notification
+                if (data.data.won) {
+                    showNotification(`Вы выиграли ${formatCurrency(data.data.winnings)} ₽!`, 'success');
+                } else {
+                    showNotification('Не повезло. Попробуйте еще раз!', 'info');
+                }
+            } else {
+                const highlight = document.getElementById('diceHighlight');
+                highlight.classList.remove('active');
+                showNotification(data.error || 'Ошибка при создании игры', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            const highlight = document.getElementById('diceHighlight');
+            highlight.classList.remove('active');
+            showNotification('Произошла ошибка', 'error');
+        } finally {
+            isPlaying = false;
+            document.getElementById('playBtn').disabled = false;
+        }
+    }
+
+    // Easing functions
+    function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function easeOutQuad(t) {
+        return 1 - (1 - t) * (1 - t);
+    }
+
+    // Get tile positions once
+    function getTilePositions() {
+        const diceGrid = document.getElementById('diceGrid');
+        const gridRect = diceGrid.getBoundingClientRect();
+        const positions = [];
+        
+        for (let i = 1; i <= 6; i++) {
+            const dice = document.querySelector(`[data-number="${i}"]`);
+            const rect = dice.getBoundingClientRect();
+            positions.push({
+                x: rect.left - gridRect.left,
+                y: rect.top - gridRect.top
+            });
+        }
+        
+        return positions;
+    }
+
+    // Create animation path with segments
+    function createAnimationPath(tilePositions, cycles) {
+        const path = [];
+        
+        for (let cycle = 0; cycle < cycles; cycle++) {
+            for (let i = 0; i < 6; i++) {
+                const nextI = (i + 1) % 6;
+                
+                // Check if row transition
+                const isRowTransition = (i === 2) || (i === 5);
+                
+                path.push({
+                    from: tilePositions[i],
+                    to: tilePositions[nextI],
+                    isRowTransition: isRowTransition
+                });
+            }
+        }
+        
+        return path;
+    }
+
+    // Interpolate position along path
+    function interpolatePath(path, progress, totalDuration) {
+        const segmentCount = path.length;
+        const segmentProgress = progress * segmentCount;
+        const segmentIndex = Math.floor(segmentProgress);
+        
+        if (segmentIndex >= segmentCount) {
+            const lastSegment = path[segmentCount - 1];
+            return { x: lastSegment.to.x, y: lastSegment.to.y, opacity: 1 };
+        }
+        
+        const segment = path[segmentIndex];
+        const t = segmentProgress - segmentIndex;
+        
+        if (segment.isRowTransition) {
+            // Fade out/in for row transitions
+            if (t < 0.3) {
+                // Fade out
+                return {
+                    x: segment.from.x,
+                    y: segment.from.y,
+                    opacity: 1 - (t / 0.3)
+                };
+            } else if (t > 0.7) {
+                // Fade in
+                return {
+                    x: segment.to.x,
+                    y: segment.to.y,
+                    opacity: (t - 0.7) / 0.3
+                };
+            } else {
+                // Invisible transition
+                return {
+                    x: segment.to.x,
+                    y: segment.to.y,
+                    opacity: 0
+                };
+            }
+        } else {
+            // Smooth interpolation for horizontal movement
+            const easedT = easeInOutCubic(t);
+            return {
+                x: segment.from.x + (segment.to.x - segment.from.x) * easedT,
+                y: segment.from.y + (segment.to.y - segment.from.y) * easedT,
+                opacity: 1
+            };
+        }
+    }
+
+    // Main animation function using requestAnimationFrame
+    function animateDiceRoll() {
+        return new Promise((resolve) => {
+            const highlight = document.getElementById('diceHighlight');
+            const tilePositions = getTilePositions();
+            const path = createAnimationPath(tilePositions, 2); // 2 cycles
+            const totalDuration = 1200; // 1.2 seconds (faster)
+            
+            highlight.classList.add('active');
+            highlight.classList.remove('lose'); // Remove lose class if present
+            
+            let startTime = null;
+            
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / totalDuration, 1);
+                
+                const pos = interpolatePath(path, progress, totalDuration);
+                highlight.style.transform = `translate(${pos.x}px, ${pos.y}px) translateZ(0)`;
+                highlight.style.opacity = pos.opacity;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    resolve();
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        });
+    }
+
+    // Slower animation to result
+    function animateToResult(targetNumber) {
+        return new Promise((resolve) => {
+            const highlight = document.getElementById('diceHighlight');
+            const tilePositions = getTilePositions();
+            
+            console.log('=== Animation Debug ===');
+            console.log('Target number:', targetNumber);
+            console.log('Tile positions:', tilePositions);
+            console.log('Target position (index ' + (targetNumber - 1) + '):', tilePositions[targetNumber - 1]);
+            
+            // Create path: 1 cycle + steps to reach target
+            const path = [];
+            
+            // First complete cycle (0→1→2→3→4→5)
+            for (let i = 0; i < 6; i++) {
+                const nextI = (i + 1) % 6;
+                const isRowTransition = (i === 2) || (i === 5);
+                
+                path.push({
+                    from: tilePositions[i],
+                    to: tilePositions[nextI],
+                    isRowTransition: isRowTransition
+                });
+            }
+            
+            // Then steps to reach target (0→1→...→target-1)
+            for (let i = 0; i < targetNumber - 1; i++) {
+                const nextI = i + 1;
+                const isRowTransition = (i === 2) || (i === 5);
+                
+                path.push({
+                    from: tilePositions[i],
+                    to: tilePositions[nextI],
+                    isRowTransition: isRowTransition
+                });
+            }
+            
+            console.log('Total path segments:', path.length);
+            console.log('Final segment:', path[path.length - 1]);
+            
+            const baseDuration = 1500; // 1.5 seconds base (faster)
+            let startTime = null;
+            
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                
+                // Apply easing to slow down over time
+                const rawProgress = elapsed / baseDuration;
+                const easedProgress = easeOutQuad(Math.min(rawProgress, 1));
+                const actualDuration = baseDuration * (1 + easedProgress); // Gradually increase duration
+                const progress = Math.min(elapsed / actualDuration, 1);
+                
+                const pos = interpolatePath(path, progress, actualDuration);
+                highlight.style.transform = `translate(${pos.x}px, ${pos.y}px) translateZ(0)`;
+                highlight.style.opacity = pos.opacity;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Ensure final position is exact
+                    const finalPos = tilePositions[targetNumber - 1];
+                    highlight.style.transform = `translate(${finalPos.x}px, ${finalPos.y}px) translateZ(0)`;
+                    highlight.style.opacity = 1;
+                    
+                    console.log('Animation complete. Final position:', finalPos);
+                    
+                    // Final pause
+                    setTimeout(resolve, 500);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        });
+    }
+
+    function showResult(gameData) {
+        const resultDisplay = document.getElementById('resultDisplay');
+        const resultCard = resultDisplay.querySelector('.result-card');
+        const resultTitle = document.getElementById('resultTitle');
+        const rolledDice = document.getElementById('rolledDice');
+        const resultText = document.getElementById('resultText');
+        const winningsText = document.getElementById('winningsText');
+        
+        // Set result
+        if (gameData.won) {
+            resultCard.className = 'result-card win';
+            resultTitle.textContent = '🎉 Победа!';
+            resultText.textContent = `Вы выбрали ${gameData.selected_number}, выпало ${gameData.rolled_number}`;
+            winningsText.textContent = `Выигрыш: +${formatCurrency(gameData.winnings)} ₽`;
+        } else {
+            resultCard.className = 'result-card lose';
+            resultTitle.textContent = '😔 Проигрыш';
+            resultText.textContent = `Вы выбрали ${gameData.selected_number}, выпало ${gameData.rolled_number}`;
+            winningsText.textContent = `Потеряно: -${formatCurrency(gameData.bet_amount)} ₽`;
+        }
+        
+        rolledDice.textContent = gameData.rolled_number;
+        resultDisplay.style.display = 'block';
+    }
+
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/games/dice/history/?limit=10');
+            const data = await response.json();
+            
+            if (data.success) {
+                const historyList = document.getElementById('historyList');
+                
+                if (data.data.games.length === 0) {
+                    historyList.innerHTML = '<p style="text-align: center; color: var(--gray);">История игр пуста</p>';
+                    return;
+                }
+                
+                historyList.innerHTML = data.data.games.map(game => `
+                    <div class="history-item ${game.won ? 'win' : 'lose'}">
+                        <div class="history-info">
+                            <div class="history-numbers">
+                                <span>Выбрано: ${game.selected_number}</span>
+                                <i class="fas fa-arrow-right"></i>
+                                <span>Выпало: ${game.rolled_number}</span>
+                            </div>
+                            <span style="color: var(--gray);">Ставка: ${game.bet_amount} ₽</span>
+                        </div>
+                        <div class="history-result ${game.won ? 'win' : 'lose'}">
+                            ${game.won ? '+' : '-'}${game.won ? game.winnings : game.bet_amount} ₽
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading history:', error);
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+</script>
+{% endblock %}

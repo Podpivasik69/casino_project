@@ -171,15 +171,15 @@
 
     <div class="profile-stats">
         <div class="stat-box">
-            <div class="stat-box-value" id="profile-balance">{{ user.profile.balance }}</div>
+            <div class="stat-box-value" id="profile-balance">{{ user.profile.balance|floatformat:"-2" }}</div>
             <div class="stat-box-label">Текущий баланс</div>
         </div>
         <div class="stat-box">
-            <div class="stat-box-value">{{ user.profile.total_wagered }}</div>
+            <div class="stat-box-value">{{ user.profile.total_wagered|floatformat:"-2" }}</div>
             <div class="stat-box-label">Всего поставлено</div>
         </div>
         <div class="stat-box">
-            <div class="stat-box-value">{{ user.profile.total_won }}</div>
+            <div class="stat-box-value">{{ user.profile.total_won|floatformat:"-2" }}</div>
             <div class="stat-box-label">Всего выиграно</div>
         </div>
     </div>
@@ -211,14 +211,15 @@
     // Load transactions
     async function loadTransactions() {
         try {
-            const response = await fetch('/api/wallet/transactions/');
+            const response = await fetch('/api/wallet/transactions/?limit=15');
             const data = await response.json();
             
             const listDiv = document.getElementById('transactions-list');
             
             if (data.transactions && data.transactions.length > 0) {
                 listDiv.innerHTML = data.transactions.map(tx => {
-                    const isPositive = ['deposit', 'win', 'bonus'].includes(tx.transaction_type);
+                    const amount = parseFloat(tx.amount);
+                    const isPositive = amount > 0;
                     const typeLabels = {
                         'deposit': 'Пополнение',
                         'bet': 'Ставка',
@@ -237,7 +238,7 @@
                                 ${tx.description ? `<div style="font-size: 12px; color: var(--gray); margin-top: 5px;">${tx.description}</div>` : ''}
                             </div>
                             <div class="transaction-amount ${isPositive ? 'positive' : 'negative'}">
-                                ${isPositive ? '+' : '-'}${Math.abs(tx.amount).toFixed(2)} ₽
+                                ${isPositive ? '+' : ''}${formatCurrency(amount)} ₽
                             </div>
                         </div>
                     `;
@@ -275,8 +276,8 @@
             
             if (response.ok) {
                 updateBalance(data.new_balance);
-                document.getElementById('profile-balance').textContent = parseFloat(data.new_balance).toFixed(2);
-                showMessage(`Демо-баланс пополнен на ${data.amount} ₽`, 'success');
+                document.getElementById('profile-balance').textContent = formatCurrency(data.new_balance);
+                showMessage(`Демо-баланс пополнен на ${formatCurrency(data.amount)} ₽`, 'success');
                 // Reload transactions
                 loadTransactions();
             } else {

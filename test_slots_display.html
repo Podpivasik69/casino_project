@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Slots Display Logic</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a24; color: white; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .win { background: rgba(16, 185, 129, 0.1); border-color: #10b981; }
+        .lose { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; }
+        .return { background: rgba(128, 128, 128, 0.1); border-color: #808080; }
+    </style>
+</head>
+<body>
+    <h1>Slots Display Logic Test</h1>
+    <div id="results"></div>
+
+    <script>
+        function formatCurrency(amount) {
+            const num = parseFloat(amount);
+            return num.toLocaleString('ru-RU', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function getResultType(multiplier) {
+            if (multiplier < 1.0) return 'loss';
+            if (multiplier == 1.0) return 'return';
+            return 'win';
+        }
+
+        function testCase(multiplier, betAmount, winAmount, description) {
+            const profit = winAmount - betAmount;
+            const resultType = getResultType(multiplier);
+            
+            let resultText = '';
+            let resultClass = '';
+            
+            if (resultType === 'win') {
+                resultText = `ВЫИГРЫШ: +${formatCurrency(profit)} ₽`;
+                resultClass = 'win';
+            } else if (resultType === 'return') {
+                resultText = `ВОЗВРАТ: 0 ₽`;
+                resultClass = 'return';
+            } else {
+                resultText = `ПРОИГРЫШ: ${formatCurrency(profit)} ₽`;
+                resultClass = 'lose';
+            }
+            
+            return `
+                <div class="test-case ${resultClass}">
+                    <strong>${description}</strong><br>
+                    Множитель: ${multiplier}x | Ставка: ${betAmount} ₽ | Выплата: ${winAmount} ₽<br>
+                    <strong>${resultText}</strong>
+                </div>
+            `;
+        }
+
+        // Test cases
+        const tests = [
+            // Losses (multiplier < 1.0)
+            { multiplier: 0.4, bet: 100, win: 40, desc: '🍒🍒 (2x) - Partial loss 60%' },
+            { multiplier: 0.5, bet: 100, win: 50, desc: '🍋🍋 (2x) - Partial loss 50%' },
+            { multiplier: 0.6, bet: 100, win: 60, desc: '🍊🍊 (2x) - Partial loss 40%' },
+            { multiplier: 0.8, bet: 100, win: 80, desc: '🍒🍒🍒 (3x) or ⭐⭐ (2x) - Partial loss 20%' },
+            
+            // Returns (multiplier = 1.0)
+            { multiplier: 1.0, bet: 100, win: 100, desc: '🍋🍋🍋 (3x) or 🔔🔔 (2x) - Break even' },
+            
+            // Wins (multiplier > 1.0)
+            { multiplier: 1.2, bet: 100, win: 120, desc: '🍊🍊🍊 (3x) or 7️⃣7️⃣ (2x) - Small win' },
+            { multiplier: 2.0, bet: 100, win: 200, desc: '🍒🍒🍒🍒 (4x) or ⭐⭐⭐ (3x) - Medium win' },
+            { multiplier: 5.0, bet: 100, win: 500, desc: '🍒🍒🍒🍒🍒 (5x) - Big win' },
+            { multiplier: 20.0, bet: 100, win: 2000, desc: '⭐⭐⭐⭐⭐ (5x) - Jackpot!' },
+            { multiplier: 50.0, bet: 100, win: 5000, desc: '7️⃣7️⃣7️⃣7️⃣7️⃣ (5x) - MEGA JACKPOT!' },
+            
+            // Total loss (multiplier = 0)
+            { multiplier: 0, bet: 100, win: 0, desc: 'No matching symbols - Total loss' }
+        ];
+
+        const resultsDiv = document.getElementById('results');
+        tests.forEach(test => {
+            resultsDiv.innerHTML += testCase(test.multiplier, test.bet, test.win, test.desc);
+        });
+    </script>
+</body>
+</html>

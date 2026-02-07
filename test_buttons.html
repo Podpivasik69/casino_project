@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Buttons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a24;
+            color: white;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .dice-number {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #444;
+            border-radius: 10px;
+            margin: 10px;
+            font-size: 32px;
+            line-height: 80px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .dice-number:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+        }
+        .dice-number.selected {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.3);
+        }
+        #output {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Тест кнопок Dice</h1>
+    
+    <h2>Выберите число:</h2>
+    <div>
+        <div class="dice-number" data-number="1" onclick="selectNumber(1)">1</div>
+        <div class="dice-number" data-number="2" onclick="selectNumber(2)">2</div>
+        <div class="dice-number" data-number="3" onclick="selectNumber(3)">3</div>
+        <div class="dice-number" data-number="4" onclick="selectNumber(4)">4</div>
+        <div class="dice-number" data-number="5" onclick="selectNumber(5)">5</div>
+        <div class="dice-number" data-number="6" onclick="selectNumber(6)">6</div>
+    </div>
+    
+    <h2>Управление ставкой:</h2>
+    <input type="number" id="betAmount" value="10" style="padding: 10px; font-size: 16px;">
+    <button onclick="setBet(1)">+1</button>
+    <button onclick="setBet(10)">+10</button>
+    <button onclick="setBet(100)">+100</button>
+    <button onclick="setBet(0)">Очистить</button>
+    
+    <h2>Играть:</h2>
+    <button id="playBtn" onclick="playGame()" disabled>Бросить кости</button>
+    
+    <div id="output">
+        <h3>Лог событий:</h3>
+        <div id="log"></div>
+    </div>
+    
+    <script>
+        let selectedNumber = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${time}] ${message}</div>`;
+        }
+        
+        function selectNumber(number) {
+            selectedNumber = number;
+            log(`Выбрано число: ${number}`);
+            
+            // Update UI
+            document.querySelectorAll('.dice-number').forEach(dice => {
+                dice.classList.remove('selected');
+            });
+            document.querySelector(`[data-number="${number}"]`).classList.add('selected');
+            
+            // Enable play button
+            document.getElementById('playBtn').disabled = false;
+            log('Кнопка "Бросить кости" активирована');
+        }
+        
+        function setBet(amount) {
+            const betInput = document.getElementById('betAmount');
+            if (amount === 0) {
+                betInput.value = '0';
+                log('Ставка очищена');
+            } else {
+                const newValue = parseFloat(betInput.value || 0) + amount;
+                betInput.value = newValue;
+                log(`Ставка увеличена на ${amount}. Новая ставка: ${newValue}`);
+            }
+        }
+        
+        function playGame() {
+            if (selectedNumber === null) {
+                log('ОШИБКА: Число не выбрано!');
+                return;
+            }
+            
+            const betAmount = document.getElementById('betAmount').value;
+            log(`ИГРА НАЧАТА! Число: ${selectedNumber}, Ставка: ${betAmount}`);
+            
+            // Simulate game
+            const rolled = Math.floor(Math.random() * 6) + 1;
+            const won = rolled === selectedNumber;
+            
+            setTimeout(() => {
+                log(`Выпало число: ${rolled}`);
+                log(won ? '🎉 ПОБЕДА!' : '😔 Проигрыш');
+            }, 1000);
+        }
+        
+        log('Страница загружена. Выберите число для начала игры.');
+    </script>
+</body>
+</html>

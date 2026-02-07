@@ -40,3 +40,15 @@ def mines_game_page(request):
 def plinko_game_page(request):
     """Plinko game page"""
     return render(request, 'plinko.html')
+
+
+@login_required
+def dice_game_page(request):
+    """Dice game page"""
+    return render(request, 'dice.html')
+
+
+@login_required
+def slots_game_page(request):
+    """Slots game page"""
+    return render(request, 'slots.html')

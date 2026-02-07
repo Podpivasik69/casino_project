@@ -242,7 +242,7 @@
         <p>Найдите все алмазы, избегая мин. Каждая открытая клетка увеличивает множитель!</p>
         <div class="current-balance">
             <i class="fas fa-wallet"></i>
-            Баланс: <span id="game-balance">{{ user.profile.balance }}</span> ₽
+            Баланс: <span id="game-balance">{{ user.profile.balance|floatformat:"-2" }}</span> ₽
         </div>
     </div>
 
@@ -359,11 +359,11 @@
                 // Update UI
                 if (data.new_balance) {
                     updateBalance(data.new_balance);
-                    document.getElementById('game-balance').textContent = parseFloat(data.new_balance).toFixed(2);
+                    document.getElementById('game-balance').textContent = formatCurrency(data.new_balance);
                 }
                 document.getElementById('openedCells').textContent = '0';
                 document.getElementById('currentMultiplier').textContent = '1.00x';
-                document.getElementById('potentialWin').textContent = betAmount.toFixed(2) + ' ₽';
+                document.getElementById('potentialWin').textContent = formatCurrency(betAmount) + ' ₽';
                 
                 // Enable grid
                 document.querySelectorAll('.mine-cell').forEach(cell => {
@@ -445,7 +445,7 @@
                     
                     const betAmount = parseFloat(document.getElementById('betAmount').value);
                     const potentialWin = betAmount * data.current_multiplier;
-                    document.getElementById('potentialWin').textContent = potentialWin.toFixed(2) + ' ₽';
+                    document.getElementById('potentialWin').textContent = formatCurrency(potentialWin) + ' ₽';
                     
                     showMessage(`Безопасно! Множитель: ${data.current_multiplier.toFixed(2)}x`, 'success');
                 }
@@ -487,7 +487,7 @@
                 // Update balance
                 if (data.new_balance) {
                     updateBalance(data.new_balance);
-                    document.getElementById('game-balance').textContent = parseFloat(data.new_balance).toFixed(2);
+                    document.getElementById('game-balance').textContent = formatCurrency(data.new_balance);
                 }
                 
                 // Disable all cells
@@ -498,7 +498,7 @@
                 document.getElementById('newGameBtn').classList.remove('hidden');
                 
                 const winnings = parseFloat(data.winnings);
-                showMessage(`Поздравляем! Вы выиграли ${winnings.toFixed(2)} ₽`, 'success');
+                showMessage(`Поздравляем! Вы выиграли ${formatCurrency(winnings)} ₽`, 'success');
             } else {
                 console.error('Cashout failed:', data);
                 showMessage(data.error || 'Ошибка при выводе', 'error');

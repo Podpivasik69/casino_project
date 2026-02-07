@@ -435,7 +435,7 @@
         <p>Бросьте шарик и наблюдайте, как он падает через колышки. Выберите уровень риска для разных множителей!</p>
         <div class="current-balance">
             <i class="fas fa-wallet"></i>
-            Баланс: <span id="game-balance">{{ user.profile.balance }}</span> ₽
+            Баланс: <span id="game-balance">{{ user.profile.balance|floatformat:"-2" }}</span> ₽
         </div>
     </div>
 
@@ -649,18 +649,18 @@
                 const betAmount = parseFloat(document.getElementById('betAmount').value);
                 
                 document.getElementById('lastMultiplier').textContent = multiplier.toFixed(2) + 'x';
-                document.getElementById('lastWinnings').textContent = winnings.toFixed(2) + ' ₽';
-                document.getElementById('game-balance').textContent = parseFloat(dropData.balance).toFixed(2);
+                document.getElementById('lastWinnings').textContent = formatCurrency(winnings) + ' ₽';
+                document.getElementById('game-balance').textContent = formatCurrency(dropData.balance);
                 
                 // Show win/loss message
                 if (multiplier < 1.0) {
                     const loss = betAmount - winnings;
-                    showMessage(`Проигрыш: ${loss.toFixed(2)} ₽ (${multiplier.toFixed(2)}x)`, 'error');
+                    showMessage(`Проигрыш: -${formatCurrency(loss)} ₽ (${multiplier.toFixed(2)}x)`, 'error');
                 } else if (multiplier === 1.0) {
                     showMessage(`Возврат ставки (${multiplier.toFixed(2)}x)`, 'info');
                 } else {
                     const profit = winnings - betAmount;
-                    showMessage(`Выигрыш: ${profit.toFixed(2)} ₽ (${multiplier.toFixed(2)}x)`, 'success');
+                    showMessage(`Выигрыш: +${formatCurrency(profit)} ₽ (${multiplier.toFixed(2)}x)`, 'success');
                 }
             } else {
                 showMessage(dropData.error || 'Ошибка при броске', 'error');
@@ -783,11 +783,11 @@
             
             if (response.ok) {
                 // Update UI
-                document.getElementById('game-balance').textContent = parseFloat(data.balance).toFixed(2);
+                document.getElementById('game-balance').textContent = formatCurrency(data.balance);
                 document.getElementById('autoPlayStatus').textContent = 
-                    `Выполнено ${data.total_drops} бросков. Общий выигрыш: ${parseFloat(data.total_winnings).toFixed(2)} ₽`;
+                    `Выполнено ${data.total_drops} бросков. Общий выигрыш: ${formatCurrency(data.total_winnings)} ₽`;
                 
-                showMessage(`Автоигра завершена! Выигрыш: ${parseFloat(data.total_winnings).toFixed(2)} ₽`, 'success');
+                showMessage(`Автоигра завершена! Выигрыш: ${formatCurrency(data.total_winnings)} ₽`, 'success');
             } else {
                 showMessage(data.error || 'Ошибка автоигры', 'error');
             }
