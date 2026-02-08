@@ -1,8 +1,10 @@
 """
-Game models for Mines and Plinko.
+Game models for Mines, Plinko, Dice, Slots, and Crash.
 """
+import uuid
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from decimal import Decimal
 from users.models import User
 
 
@@ -410,3 +412,219 @@ class SlotsGame(models.Model):
     def get_win_amount(self):
         """Get win amount"""
         return self.win_amount
+
+
+class CrashRound(models.Model):
+    """
+    Crash game round instance.
+    
+    Round flow:
+    1. Round created with status=WAITING (5-10 seconds countdown)
+    2. Round activated with status=ACTIVE (multiplier grows from 1.00x)
+    3. Round crashes at predetermined crash_point (status=CRASHED)
+    4. All active bets processed as losses
+    5. New round starts automatically
+    """
+    
+    class RoundStatus(models.TextChoices):
+        WAITING = 'waiting', 'Ожидание'
+        ACTIVE = 'active', 'Активен'
+        CRASHED = 'crashed', 'Крашнулся'
+    
+    # Round identification
+    round_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        verbose_name='ID раунда'
+    )
+    
+    # Round state
+    status = models.CharField(
+        max_length=20,
+        choices=RoundStatus.choices,
+        default=RoundStatus.WAITING,
+        verbose_name='Статус'
+    )
+    
+    # Crash point (predetermined)
+    crash_point = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('1.00'))],
+        verbose_name='Точка краша'
+    )
+    
+    # Provably Fair fields
+    server_seed = models.CharField(
+        max_length=64,
+        verbose_name='Server seed',
+        help_text='Секретный seed сервера (64 hex chars)'
+    )
+    client_seed = models.CharField(
+        max_length=64,
+        verbose_name='Client seed',
+        help_text='Публичный seed клиента (64 hex chars)'
+    )
+    server_seed_hash = models.CharField(
+        max_length=64,
+        verbose_name='Server seed hash',
+        help_text='SHA256 хэш server_seed (показывается до игры)'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создан'
+    )
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Начат'
+    )
+    crashed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Крашнулся'
+    )
+    next_round_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Следующий раунд'
+    )
+    
+    class Meta:
+        verbose_name = 'Раунд Crash'
+        verbose_name_plural = 'Раунды Crash'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status'], name='crash_round_status_idx'),
+            models.Index(fields=['-created_at'], name='crash_round_created_idx'),
+        ]
+    
+    def __str__(self):
+        return f"Crash Round {self.round_id} - {self.get_status_display()} - {self.crash_point}x"
+    
+    def is_waiting(self):
+        """Check if round is waiting"""
+        return self.status == self.RoundStatus.WAITING
+    
+    def is_active(self):
+        """Check if round is active"""
+        return self.status == self.RoundStatus.ACTIVE
+    
+    def is_crashed(self):
+        """Check if round has crashed"""
+        return self.status == self.RoundStatus.CRASHED
+
+
+class CrashBet(models.Model):
+    """
+    Player's bet in a crash round.
+    
+    Bet flow:
+    1. Player places bet with status=ACTIVE
+    2. Player can cashout manually (status=CASHED_OUT)
+    3. Or auto-cashout triggers at target multiplier (status=CASHED_OUT)
+    4. Or round crashes before cashout (status=LOST)
+    """
+    
+    class BetStatus(models.TextChoices):
+        ACTIVE = 'active', 'Активна'
+        CASHED_OUT = 'cashed_out', 'Забрана'
+        LOST = 'lost', 'Проиграна'
+    
+    # Relationships
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='crash_bets',
+        verbose_name='Пользователь'
+    )
+    round = models.ForeignKey(
+        CrashRound,
+        on_delete=models.CASCADE,
+        related_name='bets',
+        verbose_name='Раунд'
+    )
+    
+    # Bet details
+    bet_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        verbose_name='Сумма ставки'
+    )
+    
+    # Cashout details
+    cashout_multiplier = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Множитель кэшаута'
+    )
+    win_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name='Сумма выигрыша'
+    )
+    
+    # Status
+    status = models.CharField(
+        max_length=20,
+        choices=BetStatus.choices,
+        default=BetStatus.ACTIVE,
+        verbose_name='Статус'
+    )
+    
+    # Auto cashout
+    auto_cashout_target = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('1.01'))],
+        verbose_name='Цель авто-кэшаута'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создана'
+    )
+    cashed_out_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Забрана'
+    )
+    
+    class Meta:
+        verbose_name = 'Ставка Crash'
+        verbose_name_plural = 'Ставки Crash'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'round'], name='crash_bet_user_round_idx'),
+            models.Index(fields=['round', 'status'], name='crash_bet_round_status_idx'),
+            models.Index(fields=['round', 'status', 'auto_cashout_target'], name='crash_bet_auto_cashout_idx'),
+        ]
+    
+    def __str__(self):
+        return f"Crash Bet #{self.id} - {self.user.username} - {self.bet_amount} - {self.get_status_display()}"
+    
+    def is_active(self):
+        """Check if bet is active"""
+        return self.status == self.BetStatus.ACTIVE
+    
+    def is_cashed_out(self):
+        """Check if bet is cashed out"""
+        return self.status == self.BetStatus.CASHED_OUT
+    
+    def is_lost(self):
+        """Check if bet is lost"""
+        return self.status == self.BetStatus.LOST
+    
+    def has_auto_cashout(self):
+        """Check if bet has auto cashout configured"""
+        return self.auto_cashout_target is not None

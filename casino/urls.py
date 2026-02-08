@@ -30,6 +30,7 @@ urlpatterns = [
     path('plinko/', views.plinko_game_page, name='plinko'),
     path('dice/', views.dice_game_page, name='dice'),
     path('slots/', views.slots_game_page, name='slots'),
+    path('crash/', views.crash_game_page, name='crash'),
     
     # API endpoints
     path('api/auth/', include('users.urls', namespace='users')),

@@ -386,6 +386,9 @@
                 <a href="/dice/" class="nav-link {% if request.path == '/dice/' %}active{% endif %}">
                     <i class="fas fa-dice"></i> Dice
                 </a>
+                <a href="/crash/" class="nav-link {% if request.path == '/crash/' %}active{% endif %}">
+                    <i class="fas fa-rocket"></i> Crash
+                </a>
                 {% if user.is_authenticated %}
                 <a href="/profile/" class="nav-link {% if request.path == '/profile/' %}active{% endif %}">
                     <i class="fas fa-user"></i> Профиль

@@ -52,3 +52,9 @@ def dice_game_page(request):
 def slots_game_page(request):
     """Slots game page"""
     return render(request, 'slots.html')
+
+
+@login_required
+def crash_game_page(request):
+    """Crash game page"""
+    return render(request, 'crash.html')
