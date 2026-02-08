@@ -249,7 +249,7 @@
 
         <div style="margin-top: 40px;">
             {% if user.is_authenticated %}
-                <a href="/mines/" class="btn btn-primary btn-lg">
+                <a href="/slots/" class="btn btn-primary btn-lg">
                     <i class="fas fa-play"></i> НАЧАТЬ ИГРУ
                 </a>
             {% else %}
@@ -270,7 +270,7 @@
             </div>
             <div class="stat-card">
                 <i class="fas fa-bolt"></i>
-                <div class="stat-value">25x</div>
+                <div class="stat-value">100x</div>
                 <div class="stat-label">Макс. множитель</div>
             </div>
             <div class="stat-card">
@@ -280,7 +280,7 @@
             </div>
             <div class="stat-card">
                 <i class="fas fa-gamepad"></i>
-                <div class="stat-value">3</div>
+                <div class="stat-value">4</div>
                 <div class="stat-label">Доступные игры</div>
             </div>
         </div>
@@ -292,13 +292,24 @@
 </h2>
 
 <div class="featured-games">
+    <div class="game-card" onclick="window.location.href='/slots/'">
+        <div class="game-icon">🎰</div>
+        <h3 class="game-title">Slots</h3>
+        <p class="game-desc">Классические слоты с 3 или 5 барабанами! Супер анимации, множители до 100x. Выберите свой режим и крутите!</p>
+        <div class="game-stats">
+            <div class="stat-badge"><i class="fas fa-chart-line"></i> 100x</div>
+            <div class="stat-badge"><i class="fas fa-fire"></i> Hot</div>
+            <div class="stat-badge"><i class="fas fa-shield-alt"></i> Fair</div>
+        </div>
+    </div>
+
     <div class="game-card" onclick="window.location.href='/mines/'">
         <div class="game-icon">💣</div>
         <h3 class="game-title">Mines</h3>
         <p class="game-desc">Найдите все алмазы, избегая мин. Стратегическая игра с растущим множителем до 250x. Provably Fair алгоритм гарантирует честность.</p>
         <div class="game-stats">
             <div class="stat-badge"><i class="fas fa-chart-line"></i> 250x</div>
-            <div class="stat-badge"><i class="fas fa-fire"></i> Hot</div>
+            <div class="stat-badge"><i class="fas fa-fire"></i> Popular</div>
             <div class="stat-badge"><i class="fas fa-shield-alt"></i> Fair</div>
         </div>
     </div>
@@ -320,29 +331,7 @@
         <p class="game-desc">Выберите число от 1 до 6 и сделайте ставку. Угадайте правильно и получите множитель 6x! Простая и быстрая игра.</p>
         <div class="game-stats">
             <div class="stat-badge"><i class="fas fa-chart-line"></i> 6x</div>
-            <div class="stat-badge"><i class="fas fa-fire"></i> New</div>
-            <div class="stat-badge"><i class="fas fa-shield-alt"></i> Fair</div>
-        </div>
-    </div>
-    
-    <div class="game-card" onclick="window.location.href='/slots/'">
-        <div class="game-icon">🎰</div>
-        <h3 class="game-title">Slots</h3>
-        <p class="game-desc">Классические слоты с 3 или 5 барабанами! Супер анимации, множители до 100x. Выберите свой режим и крутите!</p>
-        <div class="game-stats">
-            <div class="stat-badge"><i class="fas fa-chart-line"></i> 100x</div>
-            <div class="stat-badge"><i class="fas fa-fire"></i> Hot</div>
-            <div class="stat-badge"><i class="fas fa-shield-alt"></i> Fair</div>
-        </div>
-    </div>
-    
-    <div class="game-card" onclick="window.location.href='/crash/'">
-        <div class="game-icon">🚀</div>
-        <h3 class="game-title">Crash</h3>
-        <p class="game-desc">Множитель растет от 1.00x! Заберите деньги ДО краша. Драматичная игра в реальном времени с неограниченным потенциалом!</p>
-        <div class="game-stats">
-            <div class="stat-badge"><i class="fas fa-chart-line"></i> ∞x</div>
-            <div class="stat-badge"><i class="fas fa-fire"></i> NEW</div>
+            <div class="stat-badge"><i class="fas fa-fire"></i> Fast</div>
             <div class="stat-badge"><i class="fas fa-shield-alt"></i> Fair</div>
         </div>
     </div>

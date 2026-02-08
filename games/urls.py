@@ -1,9 +1,9 @@
 """
 URL configuration for games app.
-Handles Mines, Plinko, Dice, Slots, and Crash game endpoints.
+Handles Mines, Plinko, Dice, and Slots game endpoints.
 """
 from django.urls import path
-from .views import mines_views, plinko_views, dice_views, slots_views, crash_views
+from .views import mines_views, plinko_views, dice_views, slots_views
 
 app_name = 'games'
 
@@ -33,10 +33,4 @@ urlpatterns = [
     path('slots/history/', slots_views.get_history, name='slots_history'),
     path('slots/<int:game_id>/', slots_views.get_game, name='slots_get'),
     path('slots/verify/', slots_views.verify_game, name='slots_verify'),
-    
-    # Crash game endpoints
-    path('crash/current/', crash_views.current_round, name='crash_current'),
-    path('crash/bet/', crash_views.place_bet, name='crash_bet'),
-    path('crash/cashout/', crash_views.cashout, name='crash_cashout'),
-    path('crash/history/', crash_views.round_history, name='crash_history'),
 ]
